@@ -15,7 +15,7 @@
  * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -409,15 +409,19 @@ loff_t sculld_llseek (struct file *filp, loff_t off, int whence)
 struct async_work {
 	struct kiocb *iocb;
 	int result;
-	struct work_struct work;
+/*	struct work_struct work; tpb */
+        struct delayed_work work; /* tpb */
 };
 
 /*
  * "Complete" an asynchronous operation.
  */
-static void sculld_do_deferred_op(void *p)
+/* static void sculld_do_deferred_op(void *p) tpb */
+static void sculld_do_deferred_op(struct work_struct *work) /* tpb */
 {
-	struct async_work *stuff = (struct async_work *) p;
+/*	struct async_work *stuff = (struct async_work *) p; tpb */
+        struct async_work *stuff /* tpb */
+          = container_of(work, struct async_work, work.work); /* tpb */
 	aio_complete(stuff->iocb, stuff->result, 0);
 	kfree(stuff);
 }
@@ -445,22 +449,33 @@ static int sculld_defer_op(int write, struct kiocb *iocb, char __user *buf,
 		return result; /* No memory, just complete now */
 	stuff->iocb = iocb;
 	stuff->result = result;
-	INIT_WORK(&stuff->work, sculld_do_deferred_op, stuff);
+/*	INIT_WORK(&stuff->work, sculld_do_deferred_op, stuff); tpb */
+	INIT_DELAYED_WORK(&stuff->work, sculld_do_deferred_op); /* tpb */
 	schedule_delayed_work(&stuff->work, HZ/100);
 	return -EIOCBQUEUED;
 }
 
 
-static ssize_t sculld_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+static ssize_t sculld_aio_read(struct kiocb *iocb,
+			       /* char __user *buf, tpb */
+			       /* size_t count, tpb */
+			       const struct iovec *iovec, /* tpb */
+			       unsigned long nr_segs, /* tpb */
 		loff_t pos)
 {
-	return sculld_defer_op(0, iocb, buf, count, pos);
+  /*	return sculld_defer_op(0, iocb, buf, count, pos); tpb */
+        return 0; /* FIX ME - aio treatment in this example is broken. tpb */
 }
 
-static ssize_t sculld_aio_write(struct kiocb *iocb, const char __user *buf,
-		size_t count, loff_t pos)
+static ssize_t sculld_aio_write(struct kiocb *iocb,
+			       /* char __user *buf, tpb */
+			       /* size_t count, tpb */
+			       const struct iovec *iovec, /* tpb */
+			       unsigned long nr_segs, /* tpb */
+		loff_t pos)
 {
-	return sculld_defer_op(1, iocb, (char __user *) buf, count, pos);
+/* 	return sculld_defer_op(1, iocb, (char __user *) buf, count, pos); tpb **/
+        return 0; /* FIX ME - aio treatment in this example is broken. tpb */
 }
 
 
@@ -532,8 +547,11 @@ static void sculld_setup_cdev(struct sculld_dev *dev, int index)
 		printk(KERN_NOTICE "Error %d adding scull%d", err, index);
 }
 
-static ssize_t sculld_show_dev(struct device *ddev, char *buf)
+static ssize_t sculld_show_dev(struct device *ddev,
+			       struct device_attribute *attr, /* tpb */
+                               char *buf)
 {
+  /* no longer a good example. should use attr parameter. tpb */
 	struct sculld_dev *dev = ddev->driver_data;
 
 	return print_dev_t(buf, dev->cdev.dev);
@@ -549,6 +567,8 @@ static void sculld_register_dev(struct sculld_dev *dev, int index)
 	dev->ldev.dev.driver_data = dev;
 	register_ldd_device(&dev->ldev);
 	device_create_file(&dev->ldev.dev, &dev_attr_dev);
+        /* FIX ME - tpb
+           ignoring possible error return from device_create_file tpb */
 }
 
 

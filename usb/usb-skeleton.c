@@ -13,7 +13,7 @@
  *
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/init.h>
@@ -134,7 +134,8 @@ static ssize_t skel_read(struct file *file, char __user *buffer, size_t count, l
 	return retval;
 }
 
-static void skel_write_bulk_callback(struct urb *urb, struct pt_regs *regs)
+/* static void skel_write_bulk_callback(struct urb *urb, struct pt_regs *regs) tpb */
+static void skel_write_bulk_callback(struct urb *urb)
 {
 	/* sync/async unlink faults aren't errors */
 	if (urb->status && 
@@ -221,7 +222,8 @@ static struct file_operations skel_fops = {
 static struct usb_class_driver skel_class = {
 	.name = "usb/skel%d",
 	.fops = &skel_fops,
-	.mode = S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH,
+/*	.mode = S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH, tpb */
+/* FIX ME - what replaces mode field? tpb */
 	.minor_base = USB_SKEL_MINOR_BASE,
 };
 
@@ -325,7 +327,8 @@ static void skel_disconnect(struct usb_interface *interface)
 }
 
 static struct usb_driver skel_driver = {
-	.owner = THIS_MODULE,
+/* 	.owner = THIS_MODULE, tpb */
+/* FIX ME - what replaces owner field? tpb */
 	.name = "skeleton",
 	.id_table = skel_table,
 	.probe = skel_probe,

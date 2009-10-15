@@ -21,7 +21,7 @@
  * writers.
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -333,7 +333,8 @@ struct file_operations short_i_fops = {
 	.release = short_release,
 };
 
-irqreturn_t short_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+/* irqreturn_t short_interrupt(int irq, void *dev_id, struct pt_regs *regs) tpb */
+irqreturn_t short_interrupt(int irq, void *dev_id) /* tpb*/
 {
 	struct timeval tv;
 	int written;
@@ -377,8 +378,6 @@ static inline void short_incr_tv(volatile struct timeval **tvp)
 		(*tvp)++;
 }
 
-
-
 void short_do_tasklet (unsigned long unused)
 {
 	int savecount = short_wq_count, written;
@@ -409,8 +408,8 @@ void short_do_tasklet (unsigned long unused)
 	wake_up_interruptible(&short_queue); /* awake any reading process */
 }
 
-
-irqreturn_t short_wq_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+/* irqreturn_t short_wq_interrupt(int irq, void *dev_id, struct pt_regs *regs) tpb */
+irqreturn_t short_wq_interrupt(int irq, void *dev_id) /* tpb */
 {
 	/* Grab the current time information. */
 	do_gettimeofday((struct timeval *) tv_head);
@@ -423,12 +422,17 @@ irqreturn_t short_wq_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	return IRQ_HANDLED;
 }
 
+void short_do_work(struct work_struct *work)  /* tpb */
+{                                             /* tpb */
+  short_do_tasklet(0);                        /* tpb */ 
+}                                             /* tpb */
 
 /*
  * Tasklet top half
  */
 
-irqreturn_t short_tl_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+/* irqreturn_t short_tl_interrupt(int irq, void *dev_id, struct pt_regs *regs) tpb */
+irqreturn_t short_tl_interrupt(int irq, void *dev_id) /* tpb */
 {
 	do_gettimeofday((struct timeval *) tv_head); /* cast to stop 'volatile' warning */
 	short_incr_tv(&tv_head);
@@ -437,10 +441,8 @@ irqreturn_t short_tl_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	return IRQ_HANDLED;
 }
 
-
-
-
-irqreturn_t short_sh_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+/* irqreturn_t short_sh_interrupt(int irq, void *dev_id, struct pt_regs *regs) tpb */;
+irqreturn_t short_sh_interrupt(int irq, void *dev_id) /* tpb */
 {
 	int value, written;
 	struct timeval tv;
@@ -491,7 +493,8 @@ void short_kernelprobe(void)
 		printk("short: probe failed %i times, giving up\n", count);
 }
 
-irqreturn_t short_probing(int irq, void *dev_id, struct pt_regs *regs)
+/* irqreturn_t short_probing(int irq, void *dev_id, struct pt_regs *regs) tpb */
+irqreturn_t short_probing(int irq, void *dev_id) /* tpb */
 {
 	if (short_irq == 0) short_irq = irq;	/* found */
 	if (short_irq != irq) short_irq = -irq; /* ambiguous */
@@ -511,8 +514,8 @@ void short_selfprobe(void)
       */
 	for (i = 0; trials[i]; i++)
 		tried[i] = request_irq(trials[i], short_probing,
-				SA_INTERRUPT, "short probe", NULL);
-
+/*   		       SA_INTERRUPT, "short probe", NULL); */
+		       IRQ_DISABLED, "short probe", NULL); /* tpb */
 	do {
 		short_irq = 0; /* none got, yet */
 		outb_p(0x10,short_base+2); /* enable */
@@ -594,7 +597,8 @@ int short_init(void)
 	 * (unused) argument.
 	 */
 	/* this line is in short_init() */
-	INIT_WORK(&short_wq, (void (*)(void *)) short_do_tasklet, NULL);
+/*      INIT_WORK(&short_wq, (void (*)(void *)) short_do_tasklet, NULL); */
+	INIT_WORK(&short_wq, short_do_work); /* tpb */
 
 	/*
 	 * Now we deal with the interrupt: either kernel-based
@@ -621,7 +625,8 @@ int short_init(void)
 	 */
 	if (short_irq >= 0 && share > 0) {
 		result = request_irq(short_irq, short_sh_interrupt,
-				SA_SHIRQ | SA_INTERRUPT,"short",
+/*				SA_SHIRQ | SA_INTERRUPT,"short", tpb */
+				IRQF_SHARED | IRQF_DISABLED,"short",
 				short_sh_interrupt);
 		if (result) {
 			printk(KERN_INFO "short: can't get assigned irq %i\n", short_irq);
@@ -635,7 +640,7 @@ int short_init(void)
 
 	if (short_irq >= 0) {
 		result = request_irq(short_irq, short_interrupt,
-				SA_INTERRUPT, "short", NULL);
+				IRQF_DISABLED, "short", NULL);
 		if (result) {
 			printk(KERN_INFO "short: can't get assigned irq %i\n",
 					short_irq);
@@ -654,8 +659,9 @@ int short_init(void)
 		free_irq(short_irq,NULL);
 		result = request_irq(short_irq,
 				tasklet ? short_tl_interrupt :
-				short_wq_interrupt,
-				SA_INTERRUPT,"short-bh", NULL);
+ 			        short_wq_interrupt,
+/*		 	        SA_INTERRUPT,"short-bh", NULL); tpb */
+                                IRQF_DISABLED, "short-bh", NULL); /* tpb */
 		if (result) {
 			printk(KERN_INFO "short-bh: can't get assigned irq %i\n",
 					short_irq);

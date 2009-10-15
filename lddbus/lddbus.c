@@ -1,4 +1,4 @@
-/*
+;/*
  * A virtual bus for LDD sample code devices to plug into.  This
  * code is heavily borrowed from drivers/base/sys.c
  *
@@ -70,7 +70,8 @@ struct device ldd_bus = {
 struct bus_type ldd_bus_type = {
 	.name = "ldd",
 	.match = ldd_match,
-	.hotplug  = ldd_hotplug,
+/*	.hotplug  = ldd_hotplug, tpb */
+	.uevent  = ldd_hotplug, /* tpb */
 };
 
 /*

@@ -62,7 +62,7 @@ struct page *scullc_vma_nopage(struct vm_area_struct *vma,
 {
 	unsigned long offset;
 	struct scullc_dev *ptr, *dev = vma->vm_private_data;
-	struct page *page = NOPAGE_SIGBUS;
+	struct page *page = VM_FAULT_SIGBUS;
 	void *pageptr = NULL; /* default to "missing" */
 
 	down(&dev->sem);

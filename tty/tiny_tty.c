@@ -12,7 +12,7 @@
  * from some kind of hardware.
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/init.h>
@@ -64,7 +64,7 @@ static void tiny_timer(unsigned long timer_data)
 {
 	struct tiny_serial *tiny = (struct tiny_serial *)timer_data;
 	struct tty_struct *tty;
-	int i;
+/*	int i; tpb */
 	char data[1] = {TINY_DATA_CHARACTER};
 	int data_size = 1;
 
@@ -75,12 +75,14 @@ static void tiny_timer(unsigned long timer_data)
 
 	/* send the data to the tty layer for users to read.  This doesn't
 	 * actually push the data through unless tty->low_latency is set */
-	for (i = 0; i < data_size; ++i) {
-		if (tty->flip.count >= TTY_FLIPBUF_SIZE)
-			tty_flip_buffer_push(tty);
-		tty_insert_flip_char(tty, data[i], TTY_NORMAL);
-	}
-	tty_flip_buffer_push(tty);
+/*	for (i = 0; i < data_size; ++i) { tpb */
+/*		if (tty->flip.count >= TTY_FLIPBUF_SIZE) tpb */
+/*			tty_flip_buffer_push(tty); tpb */
+/*		tty_insert_flip_char(tty, data[i], TTY_NORMAL); tpb */
+/*	} tpb */
+	tty_buffer_request_room (tty, data_size); /* tpb */
+        tty_insert_flip_string(tty, data, data_size); /* tpb */
+        tty_flip_buffer_push(tty);
 
 	/* resubmit the timer again */
 	tiny->timer->expires = jiffies + DELAY_TIME;
@@ -225,7 +227,8 @@ exit:
 
 #define RELEVANT_IFLAG(iflag) ((iflag) & (IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK))
 
-static void tiny_set_termios(struct tty_struct *tty, struct termios *old_termios)
+/* static void tiny_set_termios(struct tty_struct *tty, struct termios *old_termios) tpb */
+static void tiny_set_termios(struct tty_struct *tty, struct ktermios *old_termios) /* tpb */
 {
 	unsigned int cflag;
 
@@ -529,11 +532,14 @@ static int __init tiny_init(void)
 	tiny_tty_driver->owner = THIS_MODULE;
 	tiny_tty_driver->driver_name = "tiny_tty";
 	tiny_tty_driver->name = "ttty";
-	tiny_tty_driver->devfs_name = "tts/ttty%d";
+/*	tiny_tty_driver->devfs_name = "tts/ttty%d"; tpb */
+/* no more devfs subsystem - tpb */
 	tiny_tty_driver->major = TINY_TTY_MAJOR,
 	tiny_tty_driver->type = TTY_DRIVER_TYPE_SERIAL,
 	tiny_tty_driver->subtype = SERIAL_TYPE_NORMAL,
-	tiny_tty_driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_NO_DEVFS,
+/*	tiny_tty_driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_NO_DEVFS, tpb */
+        tiny_tty_driver->flags = TTY_DRIVER_REAL_RAW, /* tpb */
+/* no more devfs subsystem - tpb */
 	tiny_tty_driver->init_termios = tty_std_termios;
 	tiny_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
 	tty_set_operations(tiny_tty_driver, &serial_ops);

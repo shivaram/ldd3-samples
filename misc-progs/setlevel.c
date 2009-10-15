@@ -22,12 +22,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 /* #include <unistd.h> */ /* conflicting on the alpha */
-#define __LIBRARY__ /* _syscall3 and friends are only available through this */
+#define __LIBRARY__ tpb /* _syscall3 and friends are only available through this */
 #include <linux/unistd.h>
+#include <sys/klog.h> /* tpb */
 
 /* define the system call, to override the library function */
-_syscall3(int, syslog, int, type, char *, bufp, int, len);
+/* _syscall3(int, syslog, int, type, char *, bufp, int, len); tpb */
+/* It seems _syscall3 is no longer supported.   tpb
+   Instead, we use the kosher klogctl() API.    tpb */
 
 int main(int argc, char **argv)
 {
@@ -38,7 +42,8 @@ int main(int argc, char **argv)
     } else {
         fprintf(stderr, "%s: need a single arg\n",argv[0]); exit(1);
     }
-    if (syslog(8,NULL,level) < 0) {  
+/*    if (syslog(8,NULL,level) < 0) {  tpb */
+    if (klogctl(8,NULL,level) < 0) {  
         fprintf(stderr,"%s: syslog(setlevel): %s\n",
                 argv[0],strerror(errno));
         exit(1);

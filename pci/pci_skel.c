@@ -1,4 +1,4 @@
-#include <linux/config.h>
+/* #include <linux/config.h> */
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -25,6 +25,7 @@ static int probe(struct pci_dev *dev, const struct pci_device_id *id)
 	 * Like calling request_region();
 	 */
 	pci_enable_device(dev);
+	/* FIX ME - return value of pci_enable_device ignored tpb */
 	
 	if (skel_get_revision(dev) == 0x42)
 		return -ENODEV;

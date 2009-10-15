@@ -14,7 +14,9 @@
  * we cannot take responsibility for errors or fitness for use.
  */
 
+/*
 #include <linux/config.h>
+*/
 #include <linux/module.h>
 
 #include <linux/kernel.h>
@@ -34,7 +36,8 @@ int data_init(void)
 		" u8 u16 u32 u64\n");
 	printk("%-12s  %3i   %3i   %3i   %3i   %3i   %3i      "
 		"%3i %3i %3i %3i\n",
-		system_utsname.machine,
+/*		system_utsname.machine, tpb */ 
+ 	        init_uts_ns.name.machine, /* tpb */
 		(int)sizeof(char), (int)sizeof(short), (int)sizeof(int),
 		(int)sizeof(long),
 		(int)sizeof(void *), (int)sizeof(long long), (int)sizeof(__u8),

@@ -14,8 +14,8 @@
  *
  * $Id: jiq.c,v 1.7 2004/09/26 07:02:43 gregkh Exp $
  */
- 
-#include <linux/config.h>
+
+/* tpb #include <linux/config.h> */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -37,7 +37,6 @@ MODULE_LICENSE("Dual BSD/GPL");
 static long delay = 1;
 module_param(delay, long, 0);
 
-
 /*
  * This module is a silly one: it only embeds short code fragments
  * that show how enqueued tasks `feel' the environment
@@ -52,10 +51,7 @@ module_param(delay, long, 0);
  */
 static DECLARE_WAIT_QUEUE_HEAD (jiq_wait);
 
-
-static struct work_struct jiq_work;
-
-
+/* tpb static struct work_struct jiq_work; */
 
 /*
  * Keep track of info we need between task queue runs.
@@ -65,11 +61,10 @@ static struct clientdata {
 	char *buf;
 	unsigned long jiffies;
 	long delay;
+        struct delayed_work work; /* tpb */
 } jiq_data;
 
 #define SCHEDULER_QUEUE ((task_queue *) 1)
-
-
 
 static void jiq_print_tasklet(unsigned long);
 static DECLARE_TASKLET(jiq_tasklet, jiq_print_tasklet, (unsigned long)&jiq_data);
@@ -111,7 +106,8 @@ static int jiq_print(void *ptr)
 /*
  * Call jiq_print from a work queue
  */
-static void jiq_print_wq(void *ptr)
+/* tpb static void jiq_print_wq(void *ptr) */
+static void jiq_print_wq(struct work_struct *ptr) /* tpb */
 {
 	struct clientdata *data = (struct clientdata *) ptr;
     
@@ -119,12 +115,12 @@ static void jiq_print_wq(void *ptr)
 		return;
     
 	if (data->delay)
-		schedule_delayed_work(&jiq_work, data->delay);
+/*	        schedule_delayed_work(&jiq_work, data->delay); tpb */
+   	        schedule_delayed_work(&jiq_data.work, data->delay); /* tpb */
 	else
-		schedule_work(&jiq_work);
+/* 	        schedule_work(&jiq_work); tpb */
+ 	        schedule_work(&jiq_data.work.work); /* tpb */
 }
-
-
 
 static int jiq_read_wq(char *buf, char **start, off_t offset,
                    int len, int *eof, void *data)
@@ -137,7 +133,8 @@ static int jiq_read_wq(char *buf, char **start, off_t offset,
 	jiq_data.delay = 0;
     
 	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
-	schedule_work(&jiq_work);
+/*	schedule_work(&jiq_work); tpb */
+	schedule_work(&jiq_data.work.work); /* tpb */
 	schedule();
 	finish_wait(&jiq_wait, &wait);
 
@@ -157,7 +154,8 @@ static int jiq_read_wq_delayed(char *buf, char **start, off_t offset,
 	jiq_data.delay = delay;
     
 	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
-	schedule_delayed_work(&jiq_work, delay);
+/*	schedule_delayed_work(&jiq_work, delay); tpb */
+	schedule_delayed_work(&jiq_data.work, delay); /* tpb */
 	schedule();
 	finish_wait(&jiq_wait, &wait);
 
@@ -241,7 +239,8 @@ static int jiq_init(void)
 {
 
 	/* this line is in jiq_init() */
-	INIT_WORK(&jiq_work, jiq_print_wq, &jiq_data);
+  /* tpb INIT_WORK(&jiq_work, jiq_print_wq, &jiq_data); */
+        INIT_DELAYED_WORK(&jiq_data.work, jiq_print_wq);  /* tpb */
 
 	create_proc_read_entry("jiqwq", 0, NULL, jiq_read_wq, NULL);
 	create_proc_read_entry("jiqwqdelay", 0, NULL, jiq_read_wq_delayed, NULL);

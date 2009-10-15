@@ -15,7 +15,7 @@
  * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -400,15 +400,19 @@ loff_t scullp_llseek (struct file *filp, loff_t off, int whence)
 struct async_work {
 	struct kiocb *iocb;
 	int result;
-	struct work_struct work;
+/*	struct work_struct work; tpb */
+        struct delayed_work work; /* tpb */
 };
 
 /*
  * "Complete" an asynchronous operation.
  */
-static void scullp_do_deferred_op(void *p)
+/* static void scullp_do_deferred_op(void *p) tpb */
+static void scullp_do_deferred_op(struct work_struct *work) /* tpb */
 {
-	struct async_work *stuff = (struct async_work *) p;
+/*	struct async_work *stuff = (struct async_work *) p; tpb */
+        struct async_work *stuff /* tpb */
+          = container_of(work, struct async_work, work.work); /* tpb */
 	aio_complete(stuff->iocb, stuff->result, 0);
 	kfree(stuff);
 }
@@ -436,22 +440,33 @@ static int scullp_defer_op(int write, struct kiocb *iocb, char __user *buf,
 		return result; /* No memory, just complete now */
 	stuff->iocb = iocb;
 	stuff->result = result;
-	INIT_WORK(&stuff->work, scullp_do_deferred_op, stuff);
+/*	INIT_WORK(&stuff->work, scullp_do_deferred_op, stuff); tpb */
+	INIT_DELAYED_WORK(&stuff->work, scullp_do_deferred_op); /* tpb */
 	schedule_delayed_work(&stuff->work, HZ/100);
 	return -EIOCBQUEUED;
 }
 
 
-static ssize_t scullp_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+static ssize_t scullp_aio_read(struct kiocb *iocb,
+			       /* char __user *buf, tpb */
+			       /* size_t count, tpb */
+			       const struct iovec *iovec, /* tpb */
+			       unsigned long nr_segs, /* tpb */
 		loff_t pos)
 {
-	return scullp_defer_op(0, iocb, buf, count, pos);
+  /*   return scullp_defer_op(0, iocb, buf, count, pos); tpb */
+       return 0; /* FIX ME - aio treatment in this example is broken. tpb */
 }
 
-static ssize_t scullp_aio_write(struct kiocb *iocb, const char __user *buf,
-		size_t count, loff_t pos)
+static ssize_t scullp_aio_write(struct kiocb *iocb,
+			       /* char __user *buf, tpb */
+			       /* size_t count, tpb */
+			       const struct iovec *iovec, /* tpb */
+			       unsigned long nr_segs, /* tpb */
+		loff_t pos)
 {
-	return scullp_defer_op(1, iocb, (char __user *) buf, count, pos);
+/*	return scullp_defer_op(1, iocb, (char __user *) buf, count, pos); tpb **/
+        return 0; /* FIX ME - aio treatment in this example is broken. tpb */
 }
 
 

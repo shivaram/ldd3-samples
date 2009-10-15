@@ -2,7 +2,7 @@
  * Sample disk driver, from the beginning.
  */
 
-#include <linux/config.h>
+/* #include <linux/config.h> tpb */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -178,7 +178,11 @@ static void sbull_full_request(request_queue_t *q)
 		sectors_xferred = sbull_xfer_request(dev, req);
 		if (! end_that_request_first(req, 1, sectors_xferred)) {
 			blkdev_dequeue_request(req);
-			end_that_request_last(req);
+/*			end_that_request_last(req); tpb */
+			end_that_request_last(req, 0); /* tpb */
+/* FIX ME - tpb
+   Is 0 the correct value her for boolean parameter uptodate?  tpb
+   Are we holding the queue lock here? tpb */
 		}
 	}
 }
