@@ -25,7 +25,7 @@ clean:
 
 else
     # called from kernel build system: just declare what our modules are
-    obj-m := memtest.o acme.o crash.o
+    obj-m := memtest.o acme.o crash.o hellotest.o
 endif
 
 
