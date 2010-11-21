@@ -295,7 +295,7 @@ static int skel_probe(struct usb_interface *interface, const struct usb_device_i
 	}
 
 	/* let the user know what node this device is now attached to */
-	info("USB Skeleton device now attached to USBSkel-%d", interface->minor);
+	printk(KERN_INFO, "USB Skeleton device now attached to USBSkel-%d\n", __FILE__, interface->minor);
 	return 0;
 
 error:
@@ -323,7 +323,7 @@ static void skel_disconnect(struct usb_interface *interface)
 	/* decrement our usage count */
 	kref_put(&dev->kref, skel_delete);
 
-	info("USB Skeleton #%d now disconnected", minor);
+	printk(KERN_INFO, "USB Skeleton #%d now disconnected\n", __FILE__, minor);
 }
 
 static struct usb_driver skel_driver = {

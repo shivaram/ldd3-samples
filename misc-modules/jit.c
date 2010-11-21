@@ -28,6 +28,8 @@
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 
+#include <linux/sched.h>
+
 #include <asm/hardirq.h>
 /*
  * This module is a silly one: it only embeds short code fragments

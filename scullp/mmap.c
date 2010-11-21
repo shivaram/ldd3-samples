@@ -17,11 +17,11 @@
 
 /* #include <linux/config.h> tpb */
 #include <linux/module.h>
-
+#include <linux/fs.h>
 #include <linux/mm.h>		/* everything */
 #include <linux/errno.h>	/* error codes */
 #include <asm/pgtable.h>
-
+#include <asm/cacheflush.h>
 #include "scullp.h"		/* local definitions */
 
 
@@ -57,16 +57,18 @@ void scullp_vma_close(struct vm_area_struct *vma)
  * is individually decreased, and would drop to 0.
  */
 
-struct page *scullp_vma_nopage(struct vm_area_struct *vma,
-                                unsigned long address, int *type)
+int scullp_vma_fault(struct vm_area_struct *vma,
+                     struct vm_fault* vmf)
 {
+  int return_flag = VM_FAULT_SIGBUS;
 	unsigned long offset;
 	struct scullp_dev *ptr, *dev = vma->vm_private_data;
-	struct page *page = VM_FAULT_SIGBUS;
+	struct page *page = NULL;
 	void *pageptr = NULL; /* default to "missing" */
 
+  PDEBUG("scullp_vma_fault start %lu and end %lu\n", vma->vm_start, vma->vm_end); 
 	down(&dev->sem);
-	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	offset = (vmf->virtual_address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
 	if (offset >= dev->size) goto out; /* out of range */
 
 	/*
@@ -82,14 +84,18 @@ struct page *scullp_vma_nopage(struct vm_area_struct *vma,
 	if (ptr && ptr->data) pageptr = ptr->data[offset];
 	if (!pageptr) goto out; /* hole or end-of-file */
 	page = virt_to_page(pageptr);
+	vmf->page = page;
+  return_flag = VM_FAULT_MINOR;
 
+  /*set the page type for this page */
+  //set_page_memtype(page, _PAGE_CACHE_WT);
+  set_page_memtype(page, _PAGE_CACHE_WB);
+  PDEBUG("Set page memtyp as UC minus\n"); 
 	/* got it, now increment the count */
 	get_page(page);
-	if (type)
-		*type = VM_FAULT_MINOR;
-  out:
+out:
 	up(&dev->sem);
-	return page;
+	return return_flag;
 }
 
 
@@ -97,7 +103,7 @@ struct page *scullp_vma_nopage(struct vm_area_struct *vma,
 struct vm_operations_struct scullp_vm_ops = {
 	.open =     scullp_vma_open,
 	.close =    scullp_vma_close,
-	.nopage =   scullp_vma_nopage,
+	.fault =   scullp_vma_fault,
 };
 
 

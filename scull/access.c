@@ -101,18 +101,19 @@ static spinlock_t scull_u_lock = SPIN_LOCK_UNLOCKED;
 static int scull_u_open(struct inode *inode, struct file *filp)
 {
 	struct scull_dev *dev = &scull_u_device; /* device information */
+  const struct cred *cred = current_cred();
 
 	spin_lock(&scull_u_lock);
 	if (scull_u_count && 
-			(scull_u_owner != current->uid) &&  /* allow user */
-			(scull_u_owner != current->euid) && /* allow whoever did su */
+			(scull_u_owner != cred->uid) &&  /* allow user */
+			(scull_u_owner != cred->euid) && /* allow whoever did su */
 			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
 		spin_unlock(&scull_u_lock);
 		return -EBUSY;   /* -EPERM would confuse the user */
 	}
 
 	if (scull_u_count == 0)
-		scull_u_owner = current->uid; /* grab it */
+		scull_u_owner = cred->uid; /* grab it */
 
 	scull_u_count++;
 	spin_unlock(&scull_u_lock);
@@ -162,9 +163,10 @@ static spinlock_t scull_w_lock = SPIN_LOCK_UNLOCKED;
 
 static inline int scull_w_available(void)
 {
+  const struct cred *cred = current_cred();
 	return scull_w_count == 0 ||
-		scull_w_owner == current->uid ||
-		scull_w_owner == current->euid ||
+		scull_w_owner == cred->uid ||
+		scull_w_owner == cred->euid ||
 		capable(CAP_DAC_OVERRIDE);
 }
 
@@ -172,6 +174,7 @@ static inline int scull_w_available(void)
 static int scull_w_open(struct inode *inode, struct file *filp)
 {
 	struct scull_dev *dev = &scull_w_device; /* device information */
+  const struct cred *cred = current_cred();
 
 	spin_lock(&scull_w_lock);
 	while (! scull_w_available()) {
@@ -182,7 +185,7 @@ static int scull_w_open(struct inode *inode, struct file *filp)
 		spin_lock(&scull_w_lock);
 	}
 	if (scull_w_count == 0)
-		scull_w_owner = current->uid; /* grab it */
+		scull_w_owner = cred->uid; /* grab it */
 	scull_w_count++;
 	spin_unlock(&scull_w_lock);
 
